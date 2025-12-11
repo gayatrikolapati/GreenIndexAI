@@ -20,9 +20,10 @@ Write a clear, short analytical answer (3–5 sentences).
 """
 
     response = client.chat.completions.create(
-        model="llama3-70b-8192",
+        model=llama-3.1-70b-versatile,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.5,
     )
 
     return response.choices[0].message["content"].strip()
+
