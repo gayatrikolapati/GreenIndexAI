@@ -65,13 +65,11 @@ with open("ndvi_data.json", "r") as f:
 # ----------------------------
 
 async def async_post(url, payload):
-    """Async API call to Flask backend."""
     async with httpx.AsyncClient(timeout=15) as client:
         return await client.post(url, json=payload)
 
 
 async def async_fetch_image(url):
-    """Async fetch NDVI image from URL."""
     async with httpx.AsyncClient(timeout=20) as client:
         response = await client.get(url)
         if response.status_code == 200:
@@ -80,12 +78,10 @@ async def async_fetch_image(url):
 
 
 async def run_query_llm_async(query, data):
-    """Run agent1 in thread (if not async)."""
     return await asyncio.to_thread(query_llm, query, data)
 
 
 async def run_followup_async(question, context):
-    """Run agent2 in thread (if not async)."""
     return await asyncio.to_thread(answer_followup_question, question, context)
 
 
@@ -116,13 +112,56 @@ with right:
                     query_list = await run_query_llm_async(user_input, ndvi_json_data)
 
                     for query in query_list:
-                        state = query.get("state", "").lower()
-                        month = query.get("month", "").lower()
+
+                        # ---------------------------
+                        # RAW LLM OUTPUT
+                        # ---------------------------
+                        raw_state = query.get("state", "").strip().lower()
+                        raw_month = query.get("month", "").strip().lower()
                         year = int(query.get("year", 0))
 
-                        # Search local JSON
+                        # ---------------------------
+                        # NORMALIZE STATE NAMES
+                        # ---------------------------
+                        state_map = {
+                            "ap": "andhrapradesh",
+                            "andhra": "andhrapradesh",
+                            "andhra pradesh": "andhrapradesh",
+
+                            "arunachal pradesh": "arunachalpradesh",
+                            "arunachal": "arunachalpradesh",
+
+                            "up": "uttarpradesh",
+                            "uttar pradesh": "uttarpradesh",
+
+                            "mp": "madhyapradesh",
+                            "madhya pradesh": "madhyapradesh",
+
+                            "tamil nadu": "tamilnadu",
+                            "tn": "tamilnadu",
+
+                            "west bengal": "westbengal",
+                            "wb": "westbengal",
+
+                            "odisha": "odisha",
+                            "orissa": "odisha",
+                        }
+
+                        state = state_map.get(raw_state, raw_state.replace(" ", ""))
+
+                        # ---------------------------
+                        # NORMALIZE MONTH NAMES
+                        # ---------------------------
+                        month = raw_month.capitalize()
+
+                        # ---------------------------
+                        # SEARCH LOCAL JSON
+                        # ---------------------------
                         entry = next(
-                            (row for row in ndvi_json_data if row["state"] == state and row["month"] == month and row["year"] == year),
+                            (
+                                row for row in ndvi_json_data
+                                if row["state"] == state and row["month"] == month and row["year"] == year
+                            ),
                             None
                         )
 
@@ -130,7 +169,9 @@ with right:
                             st.warning(f"No data for {state}, {month} {year}")
                             continue
 
-                        # Async backend API call
+                        # ---------------------------
+                        # BACKEND IMAGE FETCH
+                        # ---------------------------
                         payload = {"state": state, "month": month, "year": year}
                         res = await async_post(API_URL, payload)
 
@@ -140,7 +181,7 @@ with right:
                             if "ndvi_url" in api_data:
                                 img = await async_fetch_image(api_data["ndvi_url"])
 
-                        # Store result
+                        # Save to history
                         st.session_state.history.append({"meta": entry, "image": img})
 
                     st.rerun()
@@ -172,8 +213,8 @@ with left:
             st.image(item["image"], width=500)
 
         st.markdown(
-            f"NDVI: **{m['ndvi_value']}**, Temp: **{m['temperature']}°C**,"
-            f" Rainfall: **{m['rainfall']}mm**, Soil Moisture: **{m['soilmoisture']}%**"
+            f"NDVI: **{m['ndvi_value']}**, Temp: **{m['temperature']}°C**, "
+            f"Rainfall: **{m['rainfall']}mm**, Soil Moisture: **{m['soilmoisture']}%**"
         )
         st.markdown("---")
 
@@ -189,7 +230,6 @@ with left:
                 st.warning("Enter a question.")
                 return
 
-            # Build context
             context = ""
             for h in st.session_state.history:
                 m = h["meta"]
