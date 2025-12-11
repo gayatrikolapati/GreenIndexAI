@@ -13,6 +13,9 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = DB_URL
 db = SQLAlchemy(app)
 CORS(app)
+@app.route("/")
+def home():
+    return {"message": "GreenIndexAI Flask Backend is running"}
 
 @app.route('/query', methods=['POST'])
 def query_ndvi():
@@ -42,3 +45,4 @@ def query_ndvi():
 if __name__ == "__main__":
 
     app.run()
+
