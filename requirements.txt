@@ -1,0 +1,10 @@
+Flask
+Flask-SQLAlchemy
+Flask-Cors
+gunicorn
+python-dotenv
+SQLAlchemy
+psycopg2-binary
+requests
+streamlit
+pillow
