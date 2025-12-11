@@ -10,3 +10,4 @@ streamlit
 Pillow
 httpx
 asyncio
+groq
