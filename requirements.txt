@@ -7,6 +7,6 @@ SQLAlchemy
 psycopg2-binary
 requests
 streamlit
-pillow
-fastapi
-uvicorn
+Pillow
+httpx
+asyncio
