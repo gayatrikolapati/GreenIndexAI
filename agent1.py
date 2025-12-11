@@ -25,7 +25,7 @@ Return ONLY a JSON list like:
 """
 
     response = client.chat.completions.create(
-        model="llama-3.1-70b-versatile",
+        model="llama-3.1-8b-instant",
         messages=[{"role": "user", "content": prompt}],
     )
 
@@ -36,4 +36,5 @@ Return ONLY a JSON list like:
         raise Exception("No JSON found in model output.\nRaw output:\n" + message)
 
     return json.loads(match.group(0))
+
 
