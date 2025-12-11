@@ -7,7 +7,6 @@ client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 def query_llm(user_input, ndvi_json_data):
 
-    # allowed states from your NDVI dataset
     allowed_states = list({row["state"] for row in ndvi_json_data})
     allowed_months = list({row["month"] for row in ndvi_json_data})
     allowed_years = list({row["year"] for row in ndvi_json_data})
@@ -33,7 +32,7 @@ No explanation. Only JSON.
         messages=[{"role": "user", "content": prompt}],
     )
 
-    message = response.choices[0].message["content"]
+    message = response.choices[0].message.content  # ← FIXED LINE
 
     match = re.search(r"\[\s*{.*?}\s*\]", message, re.DOTALL)
     if not match:
