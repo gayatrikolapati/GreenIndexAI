@@ -5,7 +5,22 @@ import json
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
+# ✅ STATE ALIAS MAP (IMPORTANT)
+STATE_ALIASES = {
+    "andaman nicobar": "Andaman and Nicobar Islands",
+    "andaman and nicobar": "Andaman and Nicobar Islands",
+    "a&n": "Andaman and Nicobar Islands",
+    "a&n islands": "Andaman and Nicobar Islands"
+}
+
 def query_llm(user_input, ndvi_json_data):
+
+    # ---------- NORMALIZE USER INPUT ----------
+    lower_input = user_input.lower()
+    for alias, proper in STATE_ALIASES.items():
+        if alias in lower_input:
+            user_input = proper
+            break
 
     allowed_states = list({row["state"] for row in ndvi_json_data})
     allowed_months = list({row["month"] for row in ndvi_json_data})
@@ -22,7 +37,7 @@ Allowed years: {allowed_years}
 
 Return ONLY a JSON list like:
 [
-  {{"state":"andhrapradesh","month":"May","year":2025}}
+  {{"state":"Andaman and Nicobar Islands","month":"May","year":2025}}
 ]
 No explanation. Only JSON.
 """
@@ -32,10 +47,19 @@ No explanation. Only JSON.
         messages=[{"role": "user", "content": prompt}],
     )
 
-    message = response.choices[0].message.content  # ← FIXED LINE
+    message = response.choices[0].message.content
 
     match = re.search(r"\[\s*{.*?}\s*\]", message, re.DOTALL)
     if not match:
         raise Exception("No JSON found in model output.\nRaw:\n" + message)
 
-    return json.loads(match.group(0))
+    parsed = json.loads(match.group(0))
+
+    # ---------- STRICT VALIDATION ----------
+    for item in parsed:
+        if item["state"] not in allowed_states:
+            raise Exception(
+                f"State '{item['state']}' not found in NDVI dataset"
+            )
+
+    return parsed
